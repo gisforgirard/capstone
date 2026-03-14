@@ -1,6 +1,7 @@
 # Capstone Python bindings, by Nguyen Anh Quynnh <aquynh@gmail.com>
 
-import ctypes, copy
+import ctypes
+from . import copy_ctypes_list
 from .sparc_const import *
 
 # define the API
@@ -14,7 +15,7 @@ class SparcOpMem(ctypes.Structure):
 class SparcOpValue(ctypes.Union):
     _fields_ = (
         ('reg', ctypes.c_uint),
-        ('imm', ctypes.c_int32),
+        ('imm', ctypes.c_int64),
         ('mem', SparcOpMem),
     )
 
@@ -46,5 +47,5 @@ class CsSparc(ctypes.Structure):
     )
 
 def get_arch_info(a):
-    return (a.cc, a.hint, copy.deepcopy(a.operands[:a.op_count]))
+    return (a.cc, a.hint, copy_ctypes_list(a.operands[:a.op_count]))
 

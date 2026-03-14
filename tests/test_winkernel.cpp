@@ -1,7 +1,10 @@
 /* Capstone Disassembly Engine */
 /* By Satoshi Tanda <tanda.sat@gmail.com>, 2016 */
+
 #include <ntddk.h>
-#include <capstone.h>
+
+#include <capstone/platform.h>
+#include <capstone/capstone.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,18 +16,41 @@ extern "C" {
 }
 #endif
 
+EXTERN_C DRIVER_INITIALIZE DriverEntry;
+
 #pragma warning(push)
-#pragma warning(disable : 4005)  // 'identifier' : macro redefinition
-#pragma warning(disable : 4007)  // 'main': must be '__cdecl'
+#pragma warning(disable : 4005)   // 'identifier' : macro redefinition
+#pragma warning(disable : 4007)   // 'main': must be '__cdecl'
+
+// Drivers must protect floating point hardware state. See use of float.
+// Use KeSaveFloatingPointState/KeRestoreFloatingPointState around floating
+// point operations. Display Drivers should use the corresponding Eng... routines.
+#pragma warning(disable : 28110)  // Suppress this, as it is false positive.
 
 // "Import" existing tests into this file. All code is encaptured into unique
 // namespace so that the same name does not conflict. Beware that those code
 // is going to be compiled as C++ source file and not C files because this file
 // is C++.
 
-namespace unnamed {
-#include "test.c"
-}  // namespace unnamed
+namespace basic {
+#include "test_basic.c"
+}  // namespace basic
+
+namespace detail {
+#include "test_detail.c"
+}  // namespace detail
+
+namespace skipdata {
+#include "test_skipdata.c"
+}  // namespace skipdata
+
+namespace iter {
+#include "test_iter.c"
+}  // namespace iter
+
+namespace customized_mnem_ {
+#include "test_customized_mnem.c"
+}  // namespace customized_mnem_
 
 namespace arm {
 #include "test_arm.c"
@@ -34,25 +60,17 @@ namespace arm64 {
 #include "test_arm64.c"
 }  // namespace arm64
 
-namespace detail {
-#include "test_detail.c"
-}  // namespace detail
-
-namespace iter {
-#include "test_iter.c"
-}  // namespace iter
-
 namespace mips {
 #include "test_mips.c"
 }  // namespace mips
 
+namespace m68k {
+#include "test_m68k.c"
+}  // namespace m68k
+
 namespace ppc {
 #include "test_ppc.c"
 }  // namespace ppc
-
-namespace skipdata {
-#include "test_skipdata.c"
-}  // namespace skipdata
 
 namespace sparc {
 #include "test_sparc.c"
@@ -86,7 +104,7 @@ static void test()
 	// On a 32bit driver, KeSaveFloatingPointState() is required before using any
 	// Capstone function because Capstone can access to the MMX/x87 registers and
 	// 32bit Windows requires drivers to use KeSaveFloatingPointState() before and
-	// KeRestoreFloatingPointState() after accesing to them. See "Using Floating
+	// KeRestoreFloatingPointState() after accessing them. See "Using Floating
 	// Point or MMX in a WDM Driver" on MSDN for more details.
 	status = KeSaveFloatingPointState(&float_save);
 	if (!NT_SUCCESS(status)) {
@@ -94,14 +112,16 @@ static void test()
 		return;
 	}
 
-	unnamed::test();
+	basic::test();
+	detail::test();
+	skipdata::test();
+	iter::test();
+	customized_mnem_::test();
 	arm::test();
 	arm64::test();
-	detail::test();
-	iter::test();
 	mips::test();
+	m68k::test();
 	ppc::test();
-	skipdata::test();
 	sparc::test();
 	systemz::test();
 	x86::test();
@@ -128,8 +148,7 @@ static void cs_winkernel_vsnprintf_test()
 }
 
 // Driver entry point
-EXTERN_C NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject,
-		PUNICODE_STRING RegistryPath)
+EXTERN_C NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
 {
 	UNREFERENCED_PARAMETER(DriverObject);
 	UNREFERENCED_PARAMETER(RegistryPath);
@@ -140,6 +159,7 @@ EXTERN_C NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject,
 
 // This functions mimics printf() but does not return the same value as printf()
 // would do. printf() is required to exercise regression tests.
+_Use_decl_annotations_
 int __cdecl printf(const char * format, ...)
 {
 	NTSTATUS status;

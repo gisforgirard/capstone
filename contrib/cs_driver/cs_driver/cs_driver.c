@@ -5,7 +5,7 @@
 // generate capstone_static_winkernel.lib. It can be done by adding the
 // capstone_static_winkernel project to your solution and compiling it first.
 //
-// Then, configure your drive project (cs_driver in this example) to locate to
+// Then, configure your driver project (cs_driver in this example) to locate to
 // capstone.h and capstone_static_winkernel.lib. To do it, open project
 // properties of the project and set Configuration to "All Configurations" and
 // Platform to "All Platforms". Then, add the following entries:
@@ -19,7 +19,7 @@
 // Capstone.
 
 #include <ntddk.h>
-#include <capstone.h>
+#include <capstone/capstone.h>
 
 // 'conversion' : from function pointer 'type1' to data pointer 'type2'
 #pragma warning(disable : 4054)
@@ -56,14 +56,14 @@ static NTSTATUS cs_driver_hello() {
   // On a 32bit driver, KeSaveFloatingPointState() is required before using any
   // Capstone function because Capstone can access to the MMX/x87 registers and
   // 32bit Windows requires drivers to use KeSaveFloatingPointState() before and
-  // KeRestoreFloatingPointState() after accesing to them. See "Using Floating
+  // KeRestoreFloatingPointState() after accessing them. See "Using Floating
   // Point or MMX in a WDM Driver" on MSDN for more details.
   status = KeSaveFloatingPointState(&float_save);
   if (!NT_SUCCESS(status)) {
     return status;
   }
 
-  // Do stuff just like user-mode. All functionalites are supported.
+  // Do stuff just like user-mode. All functionalities are supported.
   if (cs_open(CS_ARCH_X86, (sizeof(void *) == 4) ? CS_MODE_32 : CS_MODE_64,
               &handle) != CS_ERR_OK) {
     goto exit;

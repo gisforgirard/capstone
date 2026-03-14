@@ -1,6 +1,7 @@
 # Capstone Python bindings, by Nguyen Anh Quynnh <aquynh@gmail.com>
 
-import ctypes, copy
+import ctypes
+from . import copy_ctypes_list
 from .mips_const import *
 
 # define the API
@@ -39,9 +40,9 @@ class MipsOp(ctypes.Structure):
 class CsMips(ctypes.Structure):
     _fields_ = (
         ('op_count', ctypes.c_uint8),
-        ('operands', MipsOp * 8),
+        ('operands', MipsOp * 10),
     )
 
 def get_arch_info(a):
-    return copy.deepcopy(a.operands[:a.op_count])
+    return copy_ctypes_list(a.operands[:a.op_count])
 
